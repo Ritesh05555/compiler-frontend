@@ -129,6 +129,8 @@ const EditorScreen = ({ mode, toggleMode }) => {
   const textareaRef = useRef(null);
   const suggestionRef = useRef(null);
   const editorWrapperRef = useRef(null);
+  const lineNumbersRef = useRef(null);
+  const highlightRef = useRef(null);
 
   console.log('EditorScreen rendered with language:', language);
   console.log('Location:', location);
@@ -308,6 +310,33 @@ const EditorScreen = ({ mode, toggleMode }) => {
   // Calculate line numbers for display
   const lineNumbers = code.split('\n').map((_, index) => index + 1);
 
+  // Sync line numbers and highlight with textarea scroll
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    const lineNumbers = lineNumbersRef.current;
+    const highlight = highlightRef.current;
+
+    const handleScroll = () => {
+      if (textarea && lineNumbers && highlight) {
+        lineNumbers.scrollTop = textarea.scrollTop; // Sync line numbers scroll
+        // Adjust highlight position, accounting for padding and scroll
+        const lineHeight = 24; // Matches CSS line-height
+        const paddingTop = 20; // Matches textarea padding-top in CSS
+        highlight.style.top = `${(currentLine - 1) * lineHeight + paddingTop - textarea.scrollTop}px`;
+      }
+    };
+
+    if (textarea) {
+      textarea.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (textarea) {
+        textarea.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [currentLine]);
+
   // Handle clicks outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -335,7 +364,7 @@ const EditorScreen = ({ mode, toggleMode }) => {
     const lineHeight = parseInt(getComputedStyle(element).lineHeight) || 24;
     const charWidth = fontSize * 0.6;
 
-    const top = (lineNumber - 1) * lineHeight - element.scrollTop + 10; // Adjust for padding
+    const top = (lineNumber - 1) * lineHeight - element.scrollTop + 20; // Adjust for padding-top
     const left = currentLineText.length * charWidth - element.scrollLeft + 40; // Adjust for line numbers width
 
     return { top, left };
@@ -554,7 +583,7 @@ const EditorScreen = ({ mode, toggleMode }) => {
       <div className="editor-container">
         <div className={`editor-section ${mode}`}>
           <div className="editor-wrapper" ref={editorWrapperRef}>
-            <div className={`line-numbers ${mode}`}>
+            <div className={`line-numbers ${mode}`} ref={lineNumbersRef}>
               {lineNumbers.map((number) => (
                 <div
                   key={number}
@@ -567,8 +596,9 @@ const EditorScreen = ({ mode, toggleMode }) => {
             <div className="code-editor-wrapper">
               <div
                 className="current-line-highlight"
+                ref={highlightRef}
                 style={{
-                  top: `${(currentLine - 1) * 24 + 10}px`, // Adjust for padding
+                  top: `${(currentLine - 1) * 24 + 20}px`, // Initial position, adjusted for padding-top
                   height: '24px',
                 }}
               />
