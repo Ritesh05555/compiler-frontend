@@ -131,16 +131,79 @@ const EditorScreen = ({ mode, toggleMode }) => {
   const editorWrapperRef = useRef(null);
   const lineNumbersRef = useRef(null);
   const highlightRef = useRef(null);
+  const modalRef = useRef(null);
 
   console.log('EditorScreen rendered with language:', language);
   console.log('Location:', location);
 
   const templates = {
-    python: `print("Hello, World!")`,
-    javascript: `console.log("Hello, World!");`,
-    cpp: `#include <iostream>\nint main() {\n    std::cout << "Hello, World!\\n";\n    return 0;\n}`,
-    c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
-    java: `public class Code${Date.now()} {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
+    python: `# Welcome to Code Chintak! 🎉
+#
+# Python: The language of simplicity and power, perfect for AI, data science, and automation.
+#
+# Code with clarity, create with ease—Python is your gateway to endless possibilities.
+#
+# Happy Coding! 🚀
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import pandas as pd
+
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+fig, ax = plt.subplots()
+ax.axis('off')
+table = pd.plotting.table(ax, df, loc='center')
+print("Table generated")`,
+    javascript: `// Welcome to Code Chintak! 🎉
+// 
+// JavaScript: Bring the web to life with dynamic, interactive experiences.
+// 
+// From front-end flair to back-end brilliance—JavaScript powers it all.
+// 
+// Happy Coding! 🚀
+console.log("Hello, World!");`,
+    cpp: `/*
+ * Welcome to Code Chintak! 🎉
+ *
+ * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.
+ *
+ * Harness the power of C++—where precision meets performance.
+ *
+ * Happy Coding! 🚀
+ */
+#include <iostream>
+int main() {
+    std::cout << "Hello, World!\\n";
+    return 0;
+}`,
+    c: `/*
+ * Welcome to Code Chintak! 🎉
+ *
+ * C: The foundation of modern programming, built for speed and low-level control.
+ *
+ * Code close to the metal—unleash the raw power of C.
+ *
+ * Happy Coding! 🚀
+ */
+#include <stdio.h>
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}`,
+    java: `/*
+ * Welcome to Code Chintak! 🎉
+ *
+ * Java: The language of reliability, powering enterprises, Android apps, and more.
+ *
+ * Build once, run anywhere—Java is your key to scalable innovation.
+ *
+ * Happy Coding! 🚀
+ */
+public class Code${Date.now()} {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}`,
   };
 
   const languageKeywords = {
@@ -302,12 +365,19 @@ const EditorScreen = ({ mode, toggleMode }) => {
   const [output, setOutput] = useState('');
   const [isError, setIsError] = useState(false);
   const [shareLink, setShareLink] = useState('');
+  const [linkId, setLinkId] = useState('');
   const [showOutput, setShowOutput] = useState(false);
+  const [showShareLink, setShowShareLink] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [currentLine, setCurrentLine] = useState(1);
   const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 });
+  const [imageUrl, setImageUrl] = useState('');
+  const [showImageModal, setShowImageModal] = useState(false);
 
-  // Calculate line numbers for display
   const lineNumbers = code.split('\n').map((_, index) => index + 1);
 
   // Sync line numbers and highlight with textarea scroll
@@ -318,10 +388,9 @@ const EditorScreen = ({ mode, toggleMode }) => {
 
     const handleScroll = () => {
       if (textarea && lineNumbers && highlight) {
-        lineNumbers.scrollTop = textarea.scrollTop; // Sync line numbers scroll
-        // Adjust highlight position, accounting for padding and scroll
-        const lineHeight = 24; // Matches CSS line-height
-        const paddingTop = 20; // Matches textarea padding-top in CSS
+        lineNumbers.scrollTop = textarea.scrollTop;
+        const lineHeight = 24;
+        const paddingTop = 20;
         highlight.style.top = `${(currentLine - 1) * lineHeight + paddingTop - textarea.scrollTop}px`;
       }
     };
@@ -337,7 +406,7 @@ const EditorScreen = ({ mode, toggleMode }) => {
     };
   }, [currentLine]);
 
-  // Handle clicks outside to close suggestions
+  // Handle clicks outside to close suggestions and modal
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -346,13 +415,20 @@ const EditorScreen = ({ mode, toggleMode }) => {
       ) {
         setSuggestions([]);
       }
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target) &&
+        showImageModal
+      ) {
+        setShowImageModal(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showImageModal]);
 
   const getCaretCoordinates = (element, position) => {
     const { value } = element;
@@ -364,8 +440,8 @@ const EditorScreen = ({ mode, toggleMode }) => {
     const lineHeight = parseInt(getComputedStyle(element).lineHeight) || 24;
     const charWidth = fontSize * 0.6;
 
-    const top = (lineNumber - 1) * lineHeight - element.scrollTop + 20; // Adjust for padding-top
-    const left = currentLineText.length * charWidth - element.scrollLeft + 40; // Adjust for line numbers width
+    const top = (lineNumber - 1) * lineHeight - element.scrollTop + 20;
+    const left = currentLineText.length * charWidth - element.scrollLeft + 40;
 
     return { top, left };
   };
@@ -375,15 +451,12 @@ const EditorScreen = ({ mode, toggleMode }) => {
     setCode(newCode);
     setShowOutput(false);
 
-    // Get cursor position and text before cursor
     const cursorPosition = e.target.selectionStart;
     const textBeforeCursor = newCode.substring(0, cursorPosition);
     
-    // Calculate current line for tracker
     const linesBeforeCursor = textBeforeCursor.split('\n');
     setCurrentLine(linesBeforeCursor.length);
 
-    // Calculate suggestion position
     if (textareaRef.current) {
       const textarea = textareaRef.current;
       const cursorPos = getCaretCoordinates(textarea, cursorPosition);
@@ -393,13 +466,11 @@ const EditorScreen = ({ mode, toggleMode }) => {
       setSuggestionPosition({ top, left });
     }
 
-    // Improved last word detection
     const lastWordMatch = textBeforeCursor.match(/[\w\.]+$/);
     const lastWord = lastWordMatch ? lastWordMatch[0].toLowerCase() : '';
     
     console.log('Last word detected:', lastWord);
 
-    // Filter suggestions based on the last word
     const keywords = languageKeywords[language] || [];
     const filteredSuggestions = keywords
       .filter((item) => item.value.toLowerCase().startsWith(lastWord))
@@ -448,6 +519,12 @@ const EditorScreen = ({ mode, toggleMode }) => {
     console.log('handleRun triggered');
     console.log('Request payload:', { code, language });
 
+    setShowOutput(true);
+    setShowShareLink(false);
+    setIsLoading(true);
+    setOutput('');
+    setImageUrl('');
+
     try {
       const response = await axios.post('http://localhost:5000/api/code/execute', {
         code,
@@ -456,16 +533,15 @@ const EditorScreen = ({ mode, toggleMode }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000, // 10 seconds timeout
+        timeout: 10000,
       });
 
       console.log('Raw API Response:', response);
       console.log('API Response Data:', response.data);
 
-      // Check if response.data is an object
       if (typeof response.data === 'object' && response.data !== null) {
-        const { output: responseOutput, error } = response.data;
-        console.log('Parsed output:', responseOutput, 'Parsed error:', error);
+        const { output: responseOutput, error, imageUrl: responseImageUrl } = response.data;
+        console.log('Parsed output:', responseOutput, 'Parsed error:', error, 'Image URL:', responseImageUrl);
 
         if (error) {
           console.log('Setting output to error:', error);
@@ -476,40 +552,55 @@ const EditorScreen = ({ mode, toggleMode }) => {
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
+        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
       } else {
-        // If response.data is not an object, treat it as the output
         console.log('Response.data is not an object, treating as output:', response.data);
         setOutput(response.data || 'No output');
         setIsError(false);
       }
 
-      console.log('Setting showOutput to true');
-      setShowOutput(true);
-
-      // Log final state values
-      console.log('Final state - output:', output);
-      console.log('Final state - isError:', isError);
-      console.log('Final state - showOutput:', showOutput);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error in handleRun:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to execute code. Please check the backend server.';
       console.log('Setting output to error message:', errorMessage);
       setOutput(errorMessage);
       setIsError(true);
-      setShowOutput(true);
-
-      // Log final state values
-      console.log('Final state after error - output:', output);
-      console.log('Final state after error - isError:', isError);
-      console.log('Final state after error - showOutput:', showOutput);
+      setIsLoading(false);
     }
   };
 
-  const handleSave = () => {
-    alert('Code saved! (Placeholder functionality)');
+  const handleSave = async () => {
+    setIsSaving(true);
+    setIsSaved(false);
+    try {
+      const response = await axios.post('http://localhost:5000/api/code/save', {
+        code,
+        language,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      });
+
+      console.log('Save API Response:', response.data);
+      const { linkId } = response.data;
+      setLinkId(linkId);
+      setIsSaving(false);
+      setIsSaved(true);
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Error in handleSave:', error);
+      alert('Failed to save code. Please try again.');
+      setIsSaving(false);
+      setIsSaved(false);
+    }
   };
 
-  const handleDownload = () => {
+  const handleDownloadCode = () => {
     const fileExtension = {
       python: 'py',
       javascript: 'js',
@@ -521,17 +612,48 @@ const EditorScreen = ({ mode, toggleMode }) => {
     saveAs(blob, `code.${fileExtension}`);
   };
 
+  const handleDownloadImage = () => {
+    if (imageUrl) {
+      const fileName = imageUrl.split('/').pop();
+      saveAs(imageUrl, fileName);
+    }
+  };
+
   const handleShare = () => {
-    const encodedCode = encodeURIComponent(code);
-    const link = `${window.location.origin}/editor/${language}?code=${encodedCode}`;
-    setShareLink(link);
-    navigator.clipboard.writeText(link);
-    alert('Shareable link copied to clipboard!');
+    if (!linkId) {
+      alert('Please save your code before sharing!');
+      return;
+    }
+
+    setIsGeneratingLink(true);
+    setTimeout(() => {
+      const websiteName = "Code Chintak";
+      const formattedLink = `${websiteName}/${linkId}`;
+      setShareLink(formattedLink);
+      setIsGeneratingLink(false);
+      setShowShareLink(true);
+    }, 1000);
+  };
+
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(`http://localhost:5000/api/code/${linkId}`);
+    alert('Link copied to clipboard!');
+    setTimeout(() => {
+      setShowShareLink(false);
+    }, 500);
   };
 
   const hideOutput = () => {
     console.log('hideOutput triggered');
     setShowOutput(false);
+    setIsLoading(false);
+    setImageUrl('');
+  };
+
+  const openImageModal = () => {
+    if (imageUrl) {
+      setShowImageModal(true);
+    }
   };
 
   useEffect(() => {
@@ -573,12 +695,31 @@ const EditorScreen = ({ mode, toggleMode }) => {
         <button onClick={handleSave} className="action-btn">
           <i className="fa-solid fa-save"></i> Save
         </button>
-        <button onClick={handleDownload} className="action-btn">
+        <button onClick={handleDownloadCode} className="action-btn">
           <i className="fa-solid fa-download"></i> Download
         </button>
-        <button onClick={handleShare} className="action-btn">
-          <i className="fa-solid fa-share-alt"></i> Share
-        </button>
+        <div className="share-container">
+          <button onClick={handleShare} className="action-btn">
+            <i className="fa-solid fa-share-alt"></i> Share
+          </button>
+          {showShareLink && (
+            <motion.div
+              className={`share-link ${mode}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: showShareLink ? 1 : 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <p>
+                <span>{shareLink}</span>
+                <i
+                  className="fa-solid fa-copy copy-icon"
+                  onClick={handleCopyToClipboard}
+                  style={{ cursor: 'pointer', marginLeft: '10px' }}
+                ></i>
+              </p>
+            </motion.div>
+          )}
+        </div>
       </div>
       <div className="editor-container">
         <div className={`editor-section ${mode}`}>
@@ -598,7 +739,7 @@ const EditorScreen = ({ mode, toggleMode }) => {
                 className="current-line-highlight"
                 ref={highlightRef}
                 style={{
-                  top: `${(currentLine - 1) * 24 + 20}px`, // Initial position, adjusted for padding-top
+                  top: `${(currentLine - 1) * 24 + 20}px`,
                   height: '24px',
                 }}
               />
@@ -637,16 +778,83 @@ const EditorScreen = ({ mode, toggleMode }) => {
           )}
         </div>
       </div>
-      {output && (
-        <div className={`output-section ${isError ? 'error' : 'success'} ${showOutput ? 'show' : ''} ${mode}`}>
-          <h3>Output:</h3>
-          <pre>{output}</pre>
-        </div>
+      {isSaving && (
+        <motion.div
+          className={`notification ${mode}`}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Code is saving...
+        </motion.div>
       )}
-      {shareLink && (
-        <div className={`share-link ${showOutput ? 'show' : ''} ${mode}`}>
-          <p>Shareable Link: <a href={shareLink} target="_blank">{shareLink}</a></p>
-        </div>
+      {isSaved && (
+        <motion.div
+          className={`notification ${mode}`}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Code saved!
+        </motion.div>
+      )}
+      {isGeneratingLink && (
+        <motion.div
+          className={`notification ${mode}`}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Generating link...
+        </motion.div>
+      )}
+      {showOutput && (
+        <motion.div
+          className={`output-section ${isError ? 'error' : 'success'} ${showOutput ? 'show' : ''} ${mode}`}
+          initial={{ transform: 'translateY(100%)' }}
+          animate={{ transform: showOutput ? 'translateY(0)' : 'translateY(100%)' }}
+          transition={{ duration: 0.3 }}
+        >
+          <h3>Output:</h3>
+          {isLoading ? (
+            <div className="loading-spinner">Loading...</div>
+          ) : (
+            <div className="output-content">
+              <pre>{output}</pre>
+              {imageUrl && (
+                <div className="output-image">
+                  <img
+                    src={imageUrl}
+                    alt="Output Image"
+                    onClick={openImageModal}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
+      )}
+      {showImageModal && (
+        <motion.div
+          className="image-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className={`image-modal-content ${mode}`} ref={modalRef}>
+            <img src={imageUrl} alt="Full Screen Output Image" />
+            <div className="image-modal-actions">
+              <button onClick={handleDownloadImage} className="action-btn">
+                <i className="fa-solid fa-download"></i> Download Image
+              </button>
+              <button onClick={() => setShowImageModal(false)} className="action-btn">
+                <i className="fa-solid fa-times"></i> Close
+              </button>
+            </div>
+          </div>
+        </motion.div>
       )}
     </motion.div>
   );
