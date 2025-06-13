@@ -144,16 +144,8 @@ const EditorScreen = ({ mode, toggleMode }) => {
 # Code with clarity, create with ease—Python is your gateway to endless possibilities.
 #
 # Happy Coding! 🚀
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import pandas as pd
 
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-fig, ax = plt.subplots()
-ax.axis('off')
-table = pd.plotting.table(ax, df, loc='center')
-print("Table generated")`,
+print("Hello Duniya")`,
     javascript: `// Welcome to Code Chintak! 🎉
 // 
 // JavaScript: Bring the web to life with dynamic, interactive experiences.
@@ -367,6 +359,7 @@ public class Code${Date.now()} {
   const [shareLink, setShareLink] = useState('');
   const [linkId, setLinkId] = useState('');
   const [showOutput, setShowOutput] = useState(false);
+  const [hasOutput, setHasOutput] = useState(false);
   const [showShareLink, setShowShareLink] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -524,6 +517,7 @@ public class Code${Date.now()} {
     setIsLoading(true);
     setOutput('');
     setImageUrl('');
+    setHasOutput(true);
 
     try {
       const response = await axios.post('http://localhost:5000/api/code/execute', {
@@ -654,6 +648,10 @@ public class Code${Date.now()} {
     if (imageUrl) {
       setShowImageModal(true);
     }
+  };
+
+  const toggleOutput = () => {
+    setShowOutput(!showOutput);
   };
 
   useEffect(() => {
@@ -834,6 +832,17 @@ public class Code${Date.now()} {
             </div>
           )}
         </motion.div>
+      )}
+      {hasOutput && (
+        <motion.button
+          className={`toggle-output-btn ${mode}`}
+          onClick={toggleOutput}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <i className={`fa-solid ${showOutput ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i>
+        </motion.button>
       )}
       {showImageModal && (
         <motion.div
