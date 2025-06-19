@@ -503,53 +503,73 @@ public class KodeSmith {
   };
 
   const handleDownloadCode = () => {
-    const fileExtension = { python: 'py', javascript: 'js', cpp: 'cpp', c: 'c', java: 'java' }[language];
-    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, `code.${fileExtension}`);
-  };
+  const fileExtension = {
+    python: 'py',
+    javascript: 'js',
+    cpp: 'cpp',
+    c: 'c',
+    java: 'java',
+  }[language];
 
-  const handleDownloadImage = () => {
-    if (imageUrl) saveAs(imageUrl, imageUrl.split('/').pop());
-  };
+  const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+  saveAs(blob, `code.${fileExtension}`);
+};
 
-  const handleShare = () => {
-    if (!linkId) {
-      alert('Please save your code before sharing!');
-      return;
-    }
-    setIsGeneratingLink(true);
-    setTimeout(() => {
-      const shareUrl = `https://compiler-frontend-gxeb.onrender.com/code/${language}/${linkId}`;
-      setShareLink(shareUrl);
-      setIsGeneratingLink(false);
-      setShowShareLink(true);
-    }, 1000);
-  };
+const handleDownloadImage = () => {
+  if (imageUrl) {
+    saveAs(imageUrl, imageUrl.split('/').pop());
+  }
+};
 
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(shareLink);
-    alert('Link copied to clipboard!');
-    setTimeout(() => setShowShareLink(false), 500);
-  };
+const handleShare = () => {
+  if (!linkId || !language) {
+    alert('Please save your code before sharing!');
+    return;
+  }
 
-  const hideOutput = () => {
-    setShowOutput(false);
-    setIsLoading(false);
-    setImageUrl('');
-  };
+  setIsGeneratingLink(true);
 
-  const openImageModal = () => {
-    if (imageUrl) setShowImageModal(true);
-  };
+  // Delay for smooth transition
+  setTimeout(() => {
+    const shareUrl = `https://compiler-frontend-gxeb.onrender.com/code/${language}/${linkId}`;
+    setShareLink(shareUrl);
+    setIsGeneratingLink(false);
+    setShowShareLink(true);
+  }, 1000);
+};
 
-  const toggleOutput = () => setShowOutput(!showOutput);
+const handleCopyToClipboard = () => {
+  if (!shareLink) return;
+  navigator.clipboard.writeText(shareLink);
+  alert('Link copied to clipboard!');
+  setTimeout(() => setShowShareLink(false), 500);
+};
 
-  const toggleModeDropdown = () => setShowModeDropdown(!showModeDropdown);
+const hideOutput = () => {
+  setShowOutput(false);
+  setIsLoading(false);
+  setImageUrl('');
+};
 
-  const handleModeSelect = (modeValue) => {
-    setMode(modeValue);
-    setShowModeDropdown(false);
-  };
+const openImageModal = () => {
+  if (imageUrl) {
+    setShowImageModal(true);
+  }
+};
+
+const toggleOutput = () => {
+  setShowOutput(!showOutput);
+};
+
+const toggleModeDropdown = () => {
+  setShowModeDropdown(!showModeDropdown);
+};
+
+const handleModeSelect = (modeValue) => {
+  setMode(modeValue);
+  setShowModeDropdown(false);
+};
+
 
   if (!language || !templates[language]) {
     return (
