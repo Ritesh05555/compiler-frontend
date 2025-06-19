@@ -30,7 +30,7 @@ class ErrorBoundary extends Component {
 // Main App component
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [mode, setMode] = useState('light');
+  const [mode, setMode] = useState('dark'); // Default to dark mode
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,10 +38,6 @@ const App = () => {
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
-
-  const toggleMode = () => {
-    setMode(mode === 'light' ? 'dark' : 'light');
-  };
 
   return (
     <Router>
@@ -51,12 +47,12 @@ const App = () => {
             <SplashScreen key="splash" />
           ) : (
             <Routes>
-              <Route path="/" element={<MainScreen />} />
+              <Route path="/" element={<MainScreen mode={mode} />} />
               <Route
                 path="/editor/:language"
                 element={
                   <ErrorBoundary>
-                    <EditorScreen mode={mode} toggleMode={toggleMode} />
+                    <EditorScreen mode={mode} setMode={setMode} />
                   </ErrorBoundary>
                 }
               />
@@ -76,13 +72,13 @@ const SplashScreen = () => (
       animate={{ opacity: [0, 1, 1, 0] }}
       transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
     >
-      Code Chintak
+      KODE SMITH
     </motion.h1>
   </motion.div>
 );
 
 // Main Screen component
-const MainScreen = () => {
+const MainScreen = ({ mode }) => {
   const navigate = useNavigate();
   const languages = [
     { name: 'python', label: 'Python', icon: 'fa-brands fa-python' },
@@ -99,7 +95,7 @@ const MainScreen = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
-      <h1>Welcome to Code Chintak</h1>
+      <h1 style={{ background: 'linear-gradient(to right, #7EF29D, #7DE7F8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 'bold' }}>Welcome to Kode Compiler</h1>
       <div className="language-cards">
         {languages.map((lang) => (
           <motion.div
@@ -107,10 +103,7 @@ const MainScreen = () => {
             className="language-card"
             whileHover={{ scale: 1.1, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              console.log(`Navigating to /editor/${lang.name}`);
-              navigate(`/editor/${lang.name}`);
-            }}
+            onClick={() => navigate(`/editor/${lang.name}`)}
           >
             <i className={lang.icon}></i>
             <h3>{lang.label}</h3>
@@ -122,7 +115,7 @@ const MainScreen = () => {
 };
 
 // Editor Screen component
-const EditorScreen = ({ mode, toggleMode }) => {
+const EditorScreen = ({ mode, setMode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const language = location.pathname.split('/')[2];
@@ -132,70 +125,15 @@ const EditorScreen = ({ mode, toggleMode }) => {
   const lineNumbersRef = useRef(null);
   const highlightRef = useRef(null);
   const modalRef = useRef(null);
-
-  console.log('EditorScreen rendered with language:', language);
-  console.log('Location:', location);
+  const [showModeDropdown, setShowModeDropdown] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
   const templates = {
-    python: `# Welcome to Code Chintak! 🎉
-#
-# Python: The language of simplicity and power, perfect for AI, data science, and automation.
-#
-# Code with clarity, create with ease—Python is your gateway to endless possibilities.
-#
-# Happy Coding! 🚀
-
-print("Hello Duniya")`,
-    javascript: `// Welcome to Code Chintak! 🎉
-// 
-// JavaScript: Bring the web to life with dynamic, interactive experiences.
-// 
-// From front-end flair to back-end brilliance—JavaScript powers it all.
-// 
-// Happy Coding! 🚀
-console.log("Hello, World!");`,
-    cpp: `/*
- * Welcome to Code Chintak! 🎉
- *
- * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.
- *
- * Harness the power of C++—where precision meets performance.
- *
- * Happy Coding! 🚀
- */
-#include <iostream>
-int main() {
-    std::cout << "Hello, World!\\n";
-    return 0;
-}`,
-    c: `/*
- * Welcome to Code Chintak! 🎉
- *
- * C: The foundation of modern programming, built for speed and low-level control.
- *
- * Code close to the metal—unleash the raw power of C.
- *
- * Happy Coding! 🚀
- */
-#include <stdio.h>
-int main() {
-    printf("Hello, World!\\n");
-    return 0;
-}`,
-    java: `/*
- * Welcome to Code Chintak! 🎉
- *
- * Java: The language of reliability, powering enterprises, Android apps, and more.
- *
- * Build once, run anywhere—Java is your key to scalable innovation.
- *
- * Happy Coding! 🚀
- */
-public class Code${Date.now()} {
-    public static void main(String[] args) {
-        System.out.println("Hello, World!");
-    }
-}`,
+    python: `# Welcome to Code Chintak! 🎉\n#\n# Python: The language of simplicity and power, perfect for AI, data science, and automation.\n#\n# Code with clarity, create with ease—Python is your gateway to endless possibilities.\n#\n# Happy Coding! 🚀\n\nprint("Hello Duniya")`,
+    javascript: `// Welcome to Code Chintak! 🎉\n// \n// JavaScript: Bring the web to life with dynamic, interactive experiences.\n// \n// From front-end flair to back-end brilliance—JavaScript powers it all.\n// \n// Happy Coding! 🚀\nconsole.log("Hello, World!");`,
+    cpp: `/*\n * Welcome to Code Chintak! 🎉\n *\n * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.\n *\n * Harness the power of C++—where precision meets performance.\n *\n * Happy Coding! 🚀\n */\n#include <iostream>\nint main() {\n    std::cout << "Hello, World!\\n";\n    return 0;\n}`,
+    c: `/*\n * Welcome to Code Chintak! 🎉\n *\n * C: The foundation of modern programming, built for speed and low-level control.\n *\n * Code close to the metal—unleash the raw power of C.\n *\n * Happy Coding! 🚀\n */\n#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
+    java: `/*\n * Welcome to Code Chintak! 🎉\n *\n * Java: The language of reliability, powering enterprises, Android apps, and more.\n *\n * Build once, run anywhere—Java is your key to scalable innovation.\n *\n * Happy Coding! 🚀\n */\npublic class Code${Date.now()} {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
   };
 
   const languageKeywords = {
@@ -203,153 +141,26 @@ public class Code${Date.now()} {
       { caption: 'print', value: 'print', meta: 'keyword' },
       { caption: 'def', value: 'def', meta: 'keyword' },
       { caption: 'import', value: 'import', meta: 'keyword' },
-      { caption: 'from', value: 'from', meta: 'keyword' },
-      { caption: 'for', value: 'for', meta: 'keyword' },
-      { caption: 'while', value: 'while', meta: 'keyword' },
-      { caption: 'if', value: 'if', meta: 'keyword' },
-      { caption: 'elif', value: 'elif', meta: 'keyword' },
-      { caption: 'else', value: 'else', meta: 'keyword' },
-      { caption: 'return', value: 'return', meta: 'keyword' },
-      { caption: 'class', value: 'class', meta: 'keyword' },
-      { caption: 'try', value: 'try', meta: 'keyword' },
-      { caption: 'except', value: 'except', meta: 'keyword' },
-      { caption: 'finally', value: 'finally', meta: 'keyword' },
-      { caption: 'with', value: 'with', meta: 'keyword' },
-      { caption: 'range', value: 'range', meta: 'keyword' },
-      { caption: 'len', value: 'len', meta: 'keyword' },
-      { caption: 'str', value: 'str', meta: 'keyword' },
-      { caption: 'int', value: 'int', meta: 'keyword' },
-      { caption: 'float', value: 'float', meta: 'keyword' },
-      { caption: 'list', value: 'list', meta: 'keyword' },
-      { caption: 'dict', value: 'dict', meta: 'keyword' },
-      { caption: 'set', value: 'set', meta: 'keyword' },
-      { caption: 'tuple', value: 'tuple', meta: 'keyword' },
-      { caption: 'input', value: 'input', meta: 'keyword' },
-      { caption: 'open', value: 'open', meta: 'keyword' },
-      { caption: 'read', value: 'read', meta: 'keyword' },
-      { caption: 'write', value: 'write', meta: 'keyword' },
-      { caption: 'lambda', value: 'lambda', meta: 'keyword' },
-      { caption: 'map', value: 'map', meta: 'keyword' },
-      { caption: 'filter', value: 'filter', meta: 'keyword' },
-      { caption: 'zip', value: 'zip', meta: 'keyword' },
     ],
     javascript: [
       { caption: 'console', value: 'console', meta: 'keyword' },
       { caption: 'console.log', value: 'console.log', meta: 'keyword' },
       { caption: 'let', value: 'let', meta: 'keyword' },
-      { caption: 'const', value: 'const', meta: 'keyword' },
-      { caption: 'var', value: 'var', meta: 'keyword' },
-      { caption: 'function', value: 'function', meta: 'keyword' },
-      { caption: 'return', value: 'return', meta: 'keyword' },
-      { caption: 'if', value: 'if', meta: 'keyword' },
-      { caption: 'else', value: 'else', meta: 'keyword' },
-      { caption: 'for', value: 'for', meta: 'keyword' },
-      { caption: 'while', value: 'while', meta: 'keyword' },
-      { caption: 'document', value: 'document', meta: 'keyword' },
-      { caption: 'window', value: 'window', meta: 'keyword' },
-      { caption: 'addEventListener', value: 'addEventListener', meta: 'keyword' },
-      { caption: 'Math', value: 'Math', meta: 'keyword' },
-      { caption: 'Date', value: 'Date', meta: 'keyword' },
-      { caption: 'JSON', value: 'JSON', meta: 'keyword' },
-      { caption: 'setTimeout', value: 'setTimeout', meta: 'keyword' },
-      { caption: 'setInterval', value: 'setInterval', meta: 'keyword' },
-      { caption: 'fetch', value: 'fetch', meta: 'keyword' },
-      { caption: 'async', value: 'async', meta: 'keyword' },
-      { caption: 'await', value: 'await', meta: 'keyword' },
-      { caption: 'then', value: 'then', meta: 'keyword' },
-      { caption: 'catch', value: 'catch', meta: 'keyword' },
-      { caption: 'Array', value: 'Array', meta: 'keyword' },
-      { caption: 'Object', value: 'Object', meta: 'keyword' },
-      { caption: 'String', value: 'String', meta: 'keyword' },
-      { caption: 'Number', value: 'Number', meta: 'keyword' },
-      { caption: 'map', value: 'map', meta: 'keyword' },
-      { caption: 'filter', value: 'filter', meta: 'keyword' },
-      { caption: 'reduce', value: 'reduce', meta: 'keyword' },
-      { caption: 'forEach', value: 'forEach', meta: 'keyword' },
     ],
     cpp: [
       { caption: '#include', value: '#include', meta: 'keyword' },
       { caption: '<iostream>', value: '<iostream>', meta: 'keyword' },
       { caption: 'using namespace std', value: 'using namespace std', meta: 'keyword' },
-      { caption: 'cout', value: 'cout', meta: 'keyword' },
-      { caption: 'cin', value: 'cin', meta: 'keyword' },
-      { caption: 'endl', value: 'endl', meta: 'keyword' },
-      { caption: 'class', value: 'class', meta: 'keyword' },
-      { caption: 'new', value: 'new', meta: 'keyword' },
-      { caption: 'delete', value: 'delete', meta: 'keyword' },
-      { caption: 'template', value: 'template', meta: 'keyword' },
-      { caption: 'vector', value: 'vector', meta: 'keyword' },
-      { caption: 'string', value: 'string', meta: 'keyword' },
-      { caption: 'map', value: 'map', meta: 'keyword' },
-      { caption: 'unordered_map', value: 'unordered_map', meta: 'keyword' },
-      { caption: 'auto', value: 'auto', meta: 'keyword' },
-      { caption: 'nullptr', value: 'nullptr', meta: 'keyword' },
-      { caption: 'int', value: 'int', meta: 'keyword' },
-      { caption: 'double', value: 'double', meta: 'keyword' },
-      { caption: 'float', value: 'float', meta: 'keyword' },
-      { caption: 'if', value: 'if', meta: 'keyword' },
-      { caption: 'else', value: 'else', meta: 'keyword' },
-      { caption: 'switch', value: 'switch', meta: 'keyword' },
-      { caption: 'case', value: 'case', meta: 'keyword' },
-      { caption: 'for', value: 'for', meta: 'keyword' },
-      { caption: 'while', value: 'while', meta: 'keyword' },
-      { caption: 'do', value: 'do', meta: 'keyword' },
-      { caption: 'return', value: 'return', meta: 'keyword' },
-      { caption: 'char', value: 'char', meta: 'keyword' },
-      { caption: 'void', value: 'void', meta: 'keyword' },
-      { caption: 'malloc', value: 'malloc', meta: 'keyword' },
-      { caption: 'free', value: 'free', meta: 'keyword' },
-      { caption: 'struct', value: 'struct', meta: 'keyword' },
     ],
     c: [
       { caption: '#include', value: '#include', meta: 'keyword' },
       { caption: '<stdio.h>', value: '<stdio.h>', meta: 'keyword' },
       { caption: 'int', value: 'int', meta: 'keyword' },
-      { caption: 'main', value: 'main', meta: 'keyword' },
-      { caption: 'printf', value: 'printf', meta: 'keyword' },
-      { caption: 'scanf', value: 'scanf', meta: 'keyword' },
-      { caption: 'return', value: 'return', meta: 'keyword' },
-      { caption: 'for', value: 'for', meta: 'keyword' },
-      { caption: 'while', value: 'while', meta: 'keyword' },
-      { caption: 'do', value: 'do', meta: 'keyword' },
-      { caption: 'if', value: 'if', meta: 'keyword' },
-      { caption: 'else', value: 'else', meta: 'keyword' },
-      { caption: 'switch', value: 'switch', meta: 'keyword' },
-      { caption: 'case', value: 'case', meta: 'keyword' },
-      { caption: 'char', value: 'char', meta: 'keyword' },
-      { caption: 'float', value: 'float', meta: 'keyword' },
-      { caption: 'double', value: 'double', meta: 'keyword' },
-      { caption: 'void', value: 'void', meta: 'keyword' },
-      { caption: 'malloc', value: 'malloc', meta: 'keyword' },
-      { caption: 'free', value: 'free', meta: 'keyword' },
-      { caption: 'struct', value: 'struct', meta: 'keyword' },
     ],
     java: [
       { caption: 'public', value: 'public', meta: 'keyword' },
       { caption: 'class', value: 'class', meta: 'keyword' },
       { caption: 'static', value: 'static', meta: 'keyword' },
-      { caption: 'void', value: 'void', meta: 'keyword' },
-      { caption: 'main', value: 'main', meta: 'keyword' },
-      { caption: 'System', value: 'System', meta: 'keyword' },
-      { caption: 'System.out', value: 'System.out', meta: 'keyword' },
-      { caption: 'System.out.println', value: 'System.out.println', meta: 'keyword' },
-      { caption: 'int', value: 'int', meta: 'keyword' },
-      { caption: 'double', value: 'double', meta: 'keyword' },
-      { caption: 'String', value: 'String', meta: 'keyword' },
-      { caption: 'boolean', value: 'boolean', meta: 'keyword' },
-      { caption: 'for', value: 'for', meta: 'keyword' },
-      { caption: 'while', value: 'while', meta: 'keyword' },
-      { caption: 'if', value: 'if', meta: 'keyword' },
-      { caption: 'else', value: 'else', meta: 'keyword' },
-      { caption: 'import', value: 'import', meta: 'keyword' },
-      { caption: 'new', value: 'new', meta: 'keyword' },
-      { caption: 'return', value: 'return', meta: 'keyword' },
-      { caption: 'try', value: 'try', meta: 'keyword' },
-      { caption: 'catch', value: 'catch', meta: 'keyword' },
-      { caption: 'finally', value: 'finally', meta: 'keyword' },
-      { caption: 'Scanner', value: 'Scanner', meta: 'keyword' },
-      { caption: 'ArrayList', value: 'ArrayList', meta: 'keyword' },
-      { caption: 'HashMap', value: 'HashMap', meta: 'keyword' },
     ],
   };
 
@@ -373,7 +184,15 @@ public class Code${Date.now()} {
 
   const lineNumbers = code.split('\n').map((_, index) => index + 1);
 
-  // Sync line numbers and highlight with textarea scroll
+  const themes = [
+    { name: 'Light Mode', value: 'light' },
+    { name: 'Dark Mode', value: 'dark' },
+    { name: 'Dracula Mode', value: 'dracula' },
+    { name: 'Tokyo Night Mode', value: 'tokyo-night' },
+    { name: 'Nord Mode', value: 'nord' },
+    { name: 'Custom Neon Mode', value: 'custom-neon' },
+  ];
+
   useEffect(() => {
     const textarea = textareaRef.current;
     const lineNumbers = lineNumbersRef.current;
@@ -399,21 +218,17 @@ public class Code${Date.now()} {
     };
   }, [currentLine]);
 
-  // Handle clicks outside to close suggestions and modal
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        suggestionRef.current &&
-        !suggestionRef.current.contains(event.target)
-      ) {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
         setSuggestions([]);
+        setSelectedSuggestionIndex(-1);
       }
-      if (
-        modalRef.current &&
-        !modalRef.current.contains(event.target) &&
-        showImageModal
-      ) {
+      if (modalRef.current && !modalRef.current.contains(event.target) && showImageModal) {
         setShowImageModal(false);
+      }
+      if (!event.target.closest('.mode-toggle') && !event.target.closest('.mode-dropdown')) {
+        setShowModeDropdown(false);
       }
     };
 
@@ -446,7 +261,7 @@ public class Code${Date.now()} {
 
     const cursorPosition = e.target.selectionStart;
     const textBeforeCursor = newCode.substring(0, cursorPosition);
-    
+
     const linesBeforeCursor = textBeforeCursor.split('\n');
     setCurrentLine(linesBeforeCursor.length);
 
@@ -461,25 +276,41 @@ public class Code${Date.now()} {
 
     const lastWordMatch = textBeforeCursor.match(/[\w\.]+$/);
     const lastWord = lastWordMatch ? lastWordMatch[0].toLowerCase() : '';
-    
-    console.log('Last word detected:', lastWord);
 
     const keywords = languageKeywords[language] || [];
     const filteredSuggestions = keywords
       .filter((item) => item.value.toLowerCase().startsWith(lastWord))
       .slice(0, 5);
-    
-    console.log('Filtered suggestions:', filteredSuggestions);
+
     if (lastWord) {
       setSuggestions(filteredSuggestions);
+      setSelectedSuggestionIndex(-1);
     } else {
       setSuggestions([]);
+      setSelectedSuggestionIndex(-1);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      setSuggestions([]);
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      handleRun();
+    }
+
+    if (suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestionIndex((prev) => (prev > -1 ? prev - 1 : -1));
+      } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        insertSuggestion(suggestions[selectedSuggestionIndex]);
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        setSuggestions([]);
+        setSelectedSuggestionIndex(-1);
+      }
     }
   };
 
@@ -487,19 +318,17 @@ public class Code${Date.now()} {
     const textarea = textareaRef.current;
     const cursorPosition = textarea.selectionStart;
     const textBeforeCursor = code.substring(0, cursorPosition);
-    
+
     const lastWordMatch = textBeforeCursor.match(/[\w\.]+$/);
     const lastWord = lastWordMatch ? lastWordMatch[0] : '';
     const lastWordStart = lastWord ? textBeforeCursor.lastIndexOf(lastWord) : cursorPosition;
     const textAfterCursor = code.substring(cursorPosition);
 
-    const newCode =
-      code.substring(0, lastWordStart) +
-      suggestion.value +
-      textAfterCursor;
+    const newCode = code.substring(0, lastWordStart) + suggestion.value + textAfterCursor;
 
     setCode(newCode);
     setSuggestions([]);
+    setSelectedSuggestionIndex(-1);
 
     setTimeout(() => {
       textarea.focus();
@@ -509,9 +338,6 @@ public class Code${Date.now()} {
   };
 
   const handleRun = async () => {
-    console.log('handleRun triggered');
-    console.log('Request payload:', { code, language });
-
     setShowOutput(true);
     setShowShareLink(false);
     setIsLoading(true);
@@ -520,44 +346,32 @@ public class Code${Date.now()} {
     setHasOutput(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/code/execute', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/execute', {
         code,
         language,
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         timeout: 10000,
       });
 
-      console.log('Raw API Response:', response);
-      console.log('API Response Data:', response.data);
-
       if (typeof response.data === 'object' && response.data !== null) {
         const { output: responseOutput, error, imageUrl: responseImageUrl } = response.data;
-        console.log('Parsed output:', responseOutput, 'Parsed error:', error, 'Image URL:', responseImageUrl);
-
         if (error) {
-          console.log('Setting output to error:', error);
           setOutput(error);
           setIsError(true);
         } else {
-          console.log('Setting output to:', responseOutput || 'No output');
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
-        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
+        setImageUrl(responseImageUrl ? `https://compiler-backend-e3eg.onrender.com${responseImageUrl}` : '');
       } else {
-        console.log('Response.data is not an object, treating as output:', response.data);
         setOutput(response.data || 'No output');
         setIsError(false);
       }
 
       setIsLoading(false);
     } catch (error) {
-      console.error('Error in handleRun:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to execute code. Please check the backend server.';
-      console.log('Setting output to error message:', errorMessage);
       setOutput(errorMessage);
       setIsError(true);
       setIsLoading(false);
@@ -568,26 +382,20 @@ public class Code${Date.now()} {
     setIsSaving(true);
     setIsSaved(false);
     try {
-      const response = await axios.post('http://localhost:5000/api/code/save', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
         code,
         language,
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         timeout: 10000,
       });
 
-      console.log('Save API Response:', response.data);
       const { linkId } = response.data;
       setLinkId(linkId);
       setIsSaving(false);
       setIsSaved(true);
-      setTimeout(() => {
-        setIsSaved(false);
-      }, 2000);
+      setTimeout(() => setIsSaved(false), 2000);
     } catch (error) {
-      console.error('Error in handleSave:', error);
       alert('Failed to save code. Please try again.');
       setIsSaving(false);
       setIsSaved(false);
@@ -595,22 +403,13 @@ public class Code${Date.now()} {
   };
 
   const handleDownloadCode = () => {
-    const fileExtension = {
-      python: 'py',
-      javascript: 'js',
-      cpp: 'cpp',
-      c: 'c',
-      java: 'java',
-    }[language];
+    const fileExtension = { python: 'py', javascript: 'js', cpp: 'cpp', c: 'c', java: 'java' }[language];
     const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
     saveAs(blob, `code.${fileExtension}`);
   };
 
   const handleDownloadImage = () => {
-    if (imageUrl) {
-      const fileName = imageUrl.split('/').pop();
-      saveAs(imageUrl, fileName);
-    }
+    if (imageUrl) saveAs(imageUrl, imageUrl.split('/').pop());
   };
 
   const handleShare = () => {
@@ -618,52 +417,47 @@ public class Code${Date.now()} {
       alert('Please save your code before sharing!');
       return;
     }
-
     setIsGeneratingLink(true);
     setTimeout(() => {
       const websiteName = "Code Chintak";
-      const formattedLink = `${websiteName}/${linkId}`;
-      setShareLink(formattedLink);
+      setShareLink(`${websiteName}/${linkId}`);
       setIsGeneratingLink(false);
       setShowShareLink(true);
     }, 1000);
   };
 
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(`http://localhost:5000/api/code/${linkId}`);
+    navigator.clipboard.writeText(`https://compiler-backend-e3eg.onrender.com/api/code/${linkId}`);
     alert('Link copied to clipboard!');
-    setTimeout(() => {
-      setShowShareLink(false);
-    }, 500);
+    setTimeout(() => setShowShareLink(false), 500);
   };
 
   const hideOutput = () => {
-    console.log('hideOutput triggered');
     setShowOutput(false);
     setIsLoading(false);
     setImageUrl('');
   };
 
   const openImageModal = () => {
-    if (imageUrl) {
-      setShowImageModal(true);
-    }
+    if (imageUrl) setShowImageModal(true);
   };
 
-  const toggleOutput = () => {
-    setShowOutput(!showOutput);
+  const toggleOutput = () => setShowOutput(!showOutput);
+
+  const toggleModeDropdown = () => setShowModeDropdown(!showModeDropdown);
+
+  const handleModeSelect = (modeValue) => {
+    setMode(modeValue);
+    setShowModeDropdown(false);
   };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sharedCode = params.get('code');
-    if (sharedCode) {
-      setCode(decodeURIComponent(sharedCode));
-    }
+    if (sharedCode) setCode(decodeURIComponent(sharedCode));
   }, [location]);
 
   if (!language || !templates[language]) {
-    console.error('Invalid or missing language:', language);
     return (
       <div className="editor-screen">
         <h2>Error: Invalid language selected</h2>
@@ -673,23 +467,34 @@ public class Code${Date.now()} {
   }
 
   return (
-    <motion.div
-      className="editor-screen"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <motion.div className="editor-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
       <nav className="navbar">
-        <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Code Chintak</h1>
+        <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>KODE SMITH</h1>
       </nav>
       <div className={`action-bar ${mode}`}>
         <button onClick={handleRun} className="action-btn">
-          <i className="fa-solid fa-play"></i> Run
+          <i className="fa-solid fa-play"></i> Run (Ctrl+Enter)
         </button>
-        <button onClick={toggleMode} className="mode-toggle">
-          <i className={mode === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'}></i>
-          {mode === 'light' ? 'Dark' : 'Light'}
-        </button>
+        <div className="mode-toggle-container">
+          <button onClick={toggleModeDropdown} className="mode-toggle">
+            <i className="fa-solid fa-palette"></i> Theme
+          </button>
+          {showModeDropdown && (
+            <motion.div
+              className={`mode-dropdown ${mode}`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {themes.map((theme) => (
+                <div key={theme.value} className="mode-dropdown-item" onClick={() => handleModeSelect(theme.value)}>
+                  {theme.name}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </div>
         <button onClick={handleSave} className="action-btn">
           <i className="fa-solid fa-save"></i> Save
         </button>
@@ -709,11 +514,7 @@ public class Code${Date.now()} {
             >
               <p>
                 <span>{shareLink}</span>
-                <i
-                  className="fa-solid fa-copy copy-icon"
-                  onClick={handleCopyToClipboard}
-                  style={{ cursor: 'pointer', marginLeft: '10px' }}
-                ></i>
+                <i className="fa-solid fa-copy copy-icon" onClick={handleCopyToClipboard} style={{ cursor: 'pointer', marginLeft: '10px' }}></i>
               </p>
             </motion.div>
           )}
@@ -724,23 +525,13 @@ public class Code${Date.now()} {
           <div className="editor-wrapper" ref={editorWrapperRef}>
             <div className={`line-numbers ${mode}`} ref={lineNumbersRef}>
               {lineNumbers.map((number) => (
-                <div
-                  key={number}
-                  className={`line-number ${number === currentLine ? 'current-line' : ''}`}
-                >
+                <div key={number} className={`line-number ${number === currentLine ? 'current-line' : ''}`}>
                   {number}
                 </div>
               ))}
             </div>
             <div className="code-editor-wrapper">
-              <div
-                className="current-line-highlight"
-                ref={highlightRef}
-                style={{
-                  top: `${(currentLine - 1) * 24 + 20}px`,
-                  height: '24px',
-                }}
-              />
+              <div className="current-line-highlight" ref={highlightRef} style={{ top: `${(currentLine - 1) * 24 + 20}px`, height: '24px' }} />
               <textarea
                 id="code-editor"
                 className={`code-editor ${mode}`}
@@ -756,16 +547,13 @@ public class Code${Date.now()} {
           {suggestions.length > 0 && (
             <div
               className={`recommendation-container ${mode}`}
-              style={{
-                top: suggestionPosition.top,
-                left: suggestionPosition.left,
-              }}
+              style={{ top: suggestionPosition.top, left: suggestionPosition.left }}
               ref={suggestionRef}
             >
               {suggestions.map((suggestion, index) => (
                 <div
                   key={index}
-                  className="recommendation-item"
+                  className={`recommendation-item ${index === selectedSuggestionIndex ? 'selected' : ''}`}
                   onClick={() => insertSuggestion(suggestion)}
                 >
                   <span className="recommendation-value">{suggestion.value}</span>
@@ -777,32 +565,17 @@ public class Code${Date.now()} {
         </div>
       </div>
       {isSaving && (
-        <motion.div
-          className={`notification ${mode}`}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           Code is saving...
         </motion.div>
       )}
       {isSaved && (
-        <motion.div
-          className={`notification ${mode}`}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           Code saved!
         </motion.div>
       )}
       {isGeneratingLink && (
-        <motion.div
-          className={`notification ${mode}`}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           Generating link...
         </motion.div>
       )}
@@ -821,12 +594,7 @@ public class Code${Date.now()} {
               <pre>{output}</pre>
               {imageUrl && (
                 <div className="output-image">
-                  <img
-                    src={imageUrl}
-                    alt="Output Image"
-                    onClick={openImageModal}
-                    style={{ cursor: 'pointer' }}
-                  />
+                  <img src={imageUrl} alt="Output Image" onClick={openImageModal} style={{ cursor: 'pointer' }} />
                 </div>
               )}
             </div>
