@@ -42,28 +42,69 @@ html, body {
   color: #00ffcc;
 }
 
-/* Splash Screen */
+/* Splash screen container */
 .splash-screen {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(45deg, #2c2c2c, #3a3a3a, #4a4a4a, #2c2c2c);
-  background-size: 400%;
-  animation: gradientShift 6s ease infinite;
+  background-color: #000; /* Pure black */
+  overflow: hidden;
+  position: relative;
 }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Shine animation overlay */
+.splash-screen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  animation: shineEffect 3s ease-in-out infinite;
 }
 
-.splash-screen h1 {
-  font-size: 4rem;
+@keyframes shineEffect {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+/* Centered content */
+.splash-content {
+  text-align: center;
+  z-index: 1;
+  animation: fadeInOut 5s ease-in-out forwards;
+}
+
+/* Logo styling */
+.splash-logo {
+  width: 160px;
+  height: 160px;
+  margin-bottom: 1rem;
+  object-fit: contain;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
+  animation: fadeInOut 5s ease-in-out forwards;
+}
+
+/* Title under logo */
+.fade-text {
+  font-size: 2.3rem;
+  font-weight: 700;
   color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+  animation: fadeInOut 5s ease-in-out forwards;
 }
+
+/* Fade and scale animation */
+@keyframes fadeInOut {
+  0%   { opacity: 0; transform: scale(0.95); }
+  20%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
 
 /* Main Screen */
 .main-screen {
@@ -100,20 +141,38 @@ html, body {
 }
 
 .main-screen h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  background: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff, #40ffaa);
-  background-size: 500%;
+  font-size: 2.2rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 2rem;
+
+  background: linear-gradient(
+    270deg,
+    #00c6ff,
+    #0072ff,
+    #00c6ff
+  );
+  background-size: 200% 200%;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: textGradient 8s ease infinite;
+  color: transparent;
+
+  animation: animateGradient 6s ease infinite;
 }
 
-@keyframes textGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes animateGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
+
 
 .language-cards {
   display: flex;
@@ -136,17 +195,17 @@ html, body {
 
 /* Python Card - Blue and Yellow */
 .language-cards .language-card:nth-child(1) {
-  background: linear-gradient(45deg, #306998, #ffd43b);
+  background: linear-gradient(45deg, #0fd17a);
 }
 
 /* JavaScript Card - Yellow and Black */
 .language-cards .language-card:nth-child(2) {
-  background: linear-gradient(45deg, #f7df1e, #000000);
+  background: linear-gradient(45deg, #F7DF1E);
 }
 
 /* C++ Card - Blue and Gray */
 .language-cards .language-card:nth-child(3) {
-  background: linear-gradient(45deg, #00599c, #6495ed);
+  background: linear-gradient(45deg,#00599C);
 }
 
 /* C Card - Gray and White */

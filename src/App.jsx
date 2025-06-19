@@ -74,21 +74,19 @@ const App = () => {
   );
 };
 
-// Splash Screen component
 const SplashScreen = () => {
-  console.log('SplashScreen: Rendering');
   return (
-    <motion.div className="splash-screen">
-      <motion.h1
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
-      >
-        KODE SMITH
-      </motion.h1>
-    </motion.div>
+    <div className="splash-screen">
+      <div className="splash-content">
+        <img src="/logo2.png" alt="Logo" className="splash-logo" />
+        <h1 className="fade-text">KODE SMITH</h1>
+      </div>
+    </div>
   );
 };
+
+
+
 
 // Main Screen component
 const MainScreen = ({ mode }) => {
@@ -109,7 +107,7 @@ const MainScreen = ({ mode }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
-      <h1 style={{ background: 'linear-gradient(to right, #7EF29D, #7DE7F8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 'bold' }}>Welcome to Kode Compiler</h1>
+      <h1 style={{ background: 'linear-gradient(to right, #7EF29D, #7DE7F8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 'bold' }}>Compiler is ready ⚙️ choose your command language!</h1>
       <div className="language-cards">
         {languages.map((lang) => (
           <motion.div
@@ -144,12 +142,71 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
   const [fetchError, setFetchError] = useState(null);
 
   const templates = {
-    python: `# Welcome to Code Chintak! 🎉\n#\n# Python: The language of simplicity and power, perfect for AI, data science, and automation.\n#\n# Code with clarity, create with ease—Python is your gateway to endless possibilities.\n#\n# Happy Coding! 🚀\n\nprint("Hello Duniya")`,
-    javascript: `// Welcome to Code Chintak! 🎉\n// \n// JavaScript: Bring the web to life with dynamic, interactive experiences.\n// \n// From front-end flair to back-end brilliance—JavaScript powers it all.\n// \n// Happy Coding! 🚀\nconsole.log("Hello, World!");`,
-    cpp: `/*\n * Welcome to Code Chintak! 🎉\n *\n * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.\n *\n * Harness the power of C++—where precision meets performance.\n *\n * Happy Coding! 🚀\n */\n#include <iostream>\nint main() {\n    std::cout << "Hello, World!\\n";\n    return 0;\n}`,
-    c: `/*\n * Welcome to Code Chintak! 🎉\n *\n * C: The foundation of modern programming, built for speed and low-level control.\n *\n * Code close to the metal—unleash the raw power of C.\n *\n * Happy Coding! 🚀\n */\n#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
-    java: `/*\n * Welcome to Code Chintak! 🎉\n *\n * Java: The language of reliability, powering enterprises, Android apps, and more.\n *\n * Build once, run anywhere—Java is your key to scalable innovation.\n *\n * Happy Coding! 🚀\n */\npublic class Code${Date.now()} {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
-  };
+  python: `# Welcome to Kode Smith! 🎉
+#
+# Python: The language of simplicity and power, perfect for AI, data science, and automation.
+#
+# Code with clarity, create with ease—Python is your gateway to endless possibilities.
+#
+# Happy Coding! 🚀
+
+print("Hello Duniya")`,
+
+  javascript: `// Welcome to Kode Smith! 🎉
+// 
+// JavaScript: Bring the web to life with dynamic, interactive experiences.
+// 
+// From front-end flair to back-end brilliance—JavaScript powers it all.
+// 
+// Happy Coding! 🚀
+console.log("Hello, World!");`,
+
+  cpp: `/*
+ * Welcome to Kode Smith! 🎉
+ *
+ * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.
+ *
+ * Harness the power of C++—where precision meets performance.
+ *
+ * Happy Coding! 🚀
+ */
+#include <iostream>
+int main() {
+    std::cout << "Hello, World!\\n";
+    return 0;
+}`,
+
+  c: `/*
+ * Welcome to Kode Smith! 🎉
+ *
+ * C: The foundation of modern programming, built for speed and low-level control.
+ *
+ * Code close to the metal—unleash the raw power of C.
+ *
+ * Happy Coding! 🚀
+ */
+#include <stdio.h>
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}`,
+
+  java: `/*
+ * Welcome to Kode Smith! 🎉
+ *
+ * Java: The language of reliability, powering enterprises, Android apps, and more.
+ *
+ * Build once, run anywhere—Java is your key to scalable innovation.
+ *
+ * Happy Coding! 🚀
+ */
+public class KodeSmith {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}`
+};
+
 
   const languageKeywords = {
     python: [
@@ -214,7 +271,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
       console.log('EditorScreen: Fetching shared code for codeId=', codeId);
       setIsLoading(true);
       axios
-        .get(`https://compiler-backend-e3eg.onrender.com/api/code/${codeId}`)
+        .get(`http://localhost:5000/api/code/${codeId}`)
         .then((response) => {
           console.log('EditorScreen: Shared code fetched', response.data);
           const { code: sharedCode, language: sharedLanguage } = response.data;
@@ -389,7 +446,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
     setHasOutput(true);
 
     try {
-      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/execute', {
+      const response = await axios.post('http://localhost:5000/api/code/execute', {
         code,
         language,
       }, {
@@ -406,7 +463,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
-        setImageUrl(responseImageUrl ? `https://compiler-backend-e3eg.onrender.com${responseImageUrl}` : '');
+        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
       } else {
         setOutput(response.data || 'No output');
         setIsError(false);
@@ -425,7 +482,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
     setIsSaving(true);
     setIsSaved(false);
     try {
-      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
+      const response = await axios.post('http://localhost:5000/api/code/save', {
         code,
         language,
       }, {
