@@ -271,7 +271,7 @@ public class KodeSmith {
       console.log('EditorScreen: Fetching shared code for codeId=', codeId);
       setIsLoading(true);
       axios
-        .get(`http://localhost:5000/api/code/${codeId}`)
+        .get(`https://compiler-backend-e3eg.onrender.com/api/code/${codeId}`)
         .then((response) => {
           console.log('EditorScreen: Shared code fetched', response.data);
           const { code: sharedCode, language: sharedLanguage } = response.data;
@@ -446,7 +446,7 @@ public class KodeSmith {
     setHasOutput(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/code/execute', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/execute', {
         code,
         language,
       }, {
@@ -463,7 +463,7 @@ public class KodeSmith {
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
-        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
+        setImageUrl(responseImageUrl ? `https://compiler-backend-e3eg.onrender.com${responseImageUrl}` : '');
       } else {
         setOutput(response.data || 'No output');
         setIsError(false);
@@ -482,7 +482,7 @@ public class KodeSmith {
     setIsSaving(true);
     setIsSaved(false);
     try {
-      const response = await axios.post('http://localhost:5000/api/code/save', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
         code,
         language,
       }, {
@@ -519,7 +519,7 @@ public class KodeSmith {
     }
     setIsGeneratingLink(true);
     setTimeout(() => {
-      const shareUrl = `http://localhost:3000/code/${language}/${linkId}`;
+      const shareUrl = `https://compiler-frontend-gxeb.onrender.com/code/${language}/${linkId}`;
       setShareLink(shareUrl);
       setIsGeneratingLink(false);
       setShowShareLink(true);
