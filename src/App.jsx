@@ -479,28 +479,36 @@ public class KodeSmith {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    setIsSaved(false);
-    try {
-      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
+  setIsSaving(true);
+  setIsSaved(false);
+
+  try {
+    const response = await axios.post(
+      'https://compiler-backend-e3eg.onrender.com/api/code/save',
+      {
         code,
         language,
-      }, {
+      },
+      {
         headers: { 'Content-Type': 'application/json' },
         timeout: 10000,
-      });
+      }
+    );
 
-      const { linkId } = response.data;
-      setLinkId(linkId);
-      setIsSaving(false);
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2000);
-    } catch (error) {
-      alert('Failed to save code. Please try again.');
-      setIsSaving(false);
-      setIsSaved(false);
-    }
-  };
+    const { linkId, shareUrl } = response.data;
+
+    setLinkId(linkId);
+    setShareLink(shareUrl); // store the shareable URL from backend
+    setIsSaving(false);
+    setIsSaved(true);
+
+    setTimeout(() => setIsSaved(false), 2000);
+  } catch (error) {
+    alert('Failed to save code. Please try again.');
+    setIsSaving(false);
+    setIsSaved(false);
+  }
+};
 
   const handleDownloadCode = () => {
   const fileExtension = {
@@ -522,21 +530,19 @@ const handleDownloadImage = () => {
 };
 
 const handleShare = () => {
-  if (!linkId || !language) {
+  if (!shareLink) {
     alert('Please save your code before sharing!');
     return;
   }
 
   setIsGeneratingLink(true);
 
-  // Delay for smooth transition
   setTimeout(() => {
-    const shareUrl = `https://compiler-frontend-gxeb.onrender.com/code/${language}/${linkId}`;
-    setShareLink(shareUrl);
     setIsGeneratingLink(false);
     setShowShareLink(true);
-  }, 1000);
+  }, 500); // shorter delay just for animation
 };
+
 
 const handleCopyToClipboard = () => {
   if (!shareLink) return;
