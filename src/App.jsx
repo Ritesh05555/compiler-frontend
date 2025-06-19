@@ -214,7 +214,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
       console.log('EditorScreen: Fetching shared code for codeId=', codeId);
       setIsLoading(true);
       axios
-        .get(`http://localhost:5000/api/code/${codeId}`)
+        .get(`https://compiler-backend-e3eg.onrender.com/api/code/${codeId}`)
         .then((response) => {
           console.log('EditorScreen: Shared code fetched', response.data);
           const { code: sharedCode, language: sharedLanguage } = response.data;
@@ -389,7 +389,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
     setHasOutput(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/code/execute', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/execute', {
         code,
         language,
       }, {
@@ -406,7 +406,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
-        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
+        setImageUrl(responseImageUrl ? `https://compiler-backend-e3eg.onrender.com${responseImageUrl}` : '');
       } else {
         setOutput(response.data || 'No output');
         setIsError(false);
@@ -425,7 +425,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
     setIsSaving(true);
     setIsSaved(false);
     try {
-      const response = await axios.post('http://localhost:5000/api/code/save', {
+      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
         code,
         language,
       }, {
