@@ -1,5 +1,5 @@
 import { useState, useEffect, Component, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,6 +33,7 @@ const App = () => {
   const [mode, setMode] = useState('dark'); // Default to dark mode
 
   useEffect(() => {
+    console.log('App: Rendering, showSplash=', showSplash);
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 3000);
@@ -56,6 +57,15 @@ const App = () => {
                   </ErrorBoundary>
                 }
               />
+              <Route
+                path="/code/:language/:codeId"
+                element={
+                  <ErrorBoundary>
+                    <EditorScreen mode={mode} setMode={setMode} isShared />
+                  </ErrorBoundary>
+                }
+              />
+              <Route path="*" element={<div><h2>404: Page Not Found</h2><button onClick={() => window.location.href = '/'}>Go Home</button></div>} />
             </Routes>
           )}
         </AnimatePresence>
@@ -65,20 +75,24 @@ const App = () => {
 };
 
 // Splash Screen component
-const SplashScreen = () => (
-  <motion.div className="splash-screen">
-    <motion.h1
-      initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 1, 1, 0] }}
-      transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
-    >
-      KODE SMITH
-    </motion.h1>
-  </motion.div>
-);
+const SplashScreen = () => {
+  console.log('SplashScreen: Rendering');
+  return (
+    <motion.div className="splash-screen">
+      <motion.h1
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ duration: 3, times: [0, 0.3, 0.7, 1] }}
+      >
+        KODE SMITH
+      </motion.h1>
+    </motion.div>
+  );
+};
 
 // Main Screen component
 const MainScreen = ({ mode }) => {
+  console.log('MainScreen: Rendering');
   const navigate = useNavigate();
   const languages = [
     { name: 'python', label: 'Python', icon: 'fa-brands fa-python' },
@@ -115,10 +129,10 @@ const MainScreen = ({ mode }) => {
 };
 
 // Editor Screen component
-const EditorScreen = ({ mode, setMode }) => {
+const EditorScreen = ({ mode, setMode, isShared }) => {
+  console.log('EditorScreen: Rendering, isShared=', isShared);
   const navigate = useNavigate();
-  const location = useLocation();
-  const language = location.pathname.split('/')[2];
+  const { language, codeId } = useParams();
   const textareaRef = useRef(null);
   const suggestionRef = useRef(null);
   const editorWrapperRef = useRef(null);
@@ -127,6 +141,7 @@ const EditorScreen = ({ mode, setMode }) => {
   const modalRef = useRef(null);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [fetchError, setFetchError] = useState(null);
 
   const templates = {
     python: `# Welcome to Code Chintak! 🎉\n#\n# Python: The language of simplicity and power, perfect for AI, data science, and automation.\n#\n# Code with clarity, create with ease—Python is your gateway to endless possibilities.\n#\n# Happy Coding! 🚀\n\nprint("Hello Duniya")`,
@@ -192,6 +207,34 @@ const EditorScreen = ({ mode, setMode }) => {
     { name: 'Nord Mode', value: 'nord' },
     { name: 'Custom Neon Mode', value: 'custom-neon' },
   ];
+
+  // Load shared code if accessing via /code/:language/:codeId
+  useEffect(() => {
+    if (isShared && codeId) {
+      console.log('EditorScreen: Fetching shared code for codeId=', codeId);
+      setIsLoading(true);
+      axios
+        .get(`http://localhost:5000/api/code/${codeId}`)
+        .then((response) => {
+          console.log('EditorScreen: Shared code fetched', response.data);
+          const { code: sharedCode, language: sharedLanguage } = response.data;
+          if (sharedLanguage === language) {
+            setCode(sharedCode);
+            setLinkId(codeId);
+          } else {
+            setCode(templates[language] || '');
+            setFetchError('Language mismatch in shared code.');
+          }
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error('EditorScreen: Failed to load shared code:', error);
+          setCode(templates[language] || '');
+          setFetchError('Failed to load shared code.');
+          setIsLoading(false);
+        });
+    }
+  }, [isShared, codeId, language]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -346,12 +389,12 @@ const EditorScreen = ({ mode, setMode }) => {
     setHasOutput(true);
 
     try {
-      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/execute', {
+      const response = await axios.post('http://localhost:5000/api/code/execute', {
         code,
         language,
       }, {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
+        timeout: 25000,
       });
 
       if (typeof response.data === 'object' && response.data !== null) {
@@ -363,7 +406,7 @@ const EditorScreen = ({ mode, setMode }) => {
           setOutput(responseOutput || 'No output');
           setIsError(false);
         }
-        setImageUrl(responseImageUrl ? `https://compiler-backend-e3eg.onrender.com${responseImageUrl}` : '');
+        setImageUrl(responseImageUrl ? `http://localhost:5000${responseImageUrl}` : '');
       } else {
         setOutput(response.data || 'No output');
         setIsError(false);
@@ -382,7 +425,7 @@ const EditorScreen = ({ mode, setMode }) => {
     setIsSaving(true);
     setIsSaved(false);
     try {
-      const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', {
+      const response = await axios.post('http://localhost:5000/api/code/save', {
         code,
         language,
       }, {
@@ -419,15 +462,15 @@ const EditorScreen = ({ mode, setMode }) => {
     }
     setIsGeneratingLink(true);
     setTimeout(() => {
-      const websiteName = "Code Chintak";
-      setShareLink(`${websiteName}/${linkId}`);
+      const shareUrl = `http://localhost:3000/code/${language}/${linkId}`;
+      setShareLink(shareUrl);
       setIsGeneratingLink(false);
       setShowShareLink(true);
     }, 1000);
   };
 
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(`https://compiler-backend-e3eg.onrender.com/api/code/${linkId}`);
+    navigator.clipboard.writeText(shareLink);
     alert('Link copied to clipboard!');
     setTimeout(() => setShowShareLink(false), 500);
   };
@@ -451,16 +494,27 @@ const EditorScreen = ({ mode, setMode }) => {
     setShowModeDropdown(false);
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const sharedCode = params.get('code');
-    if (sharedCode) setCode(decodeURIComponent(sharedCode));
-  }, [location]);
-
   if (!language || !templates[language]) {
     return (
       <div className="editor-screen">
         <h2>Error: Invalid language selected</h2>
+        <button onClick={() => navigate('/')}>Go Back</button>
+      </div>
+    );
+  }
+
+  if (isLoading && isShared) {
+    return (
+      <div className="editor-screen">
+        <h2>Loading shared code...</h2>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="editor-screen">
+        <h2>Error: {fetchError}</h2>
         <button onClick={() => navigate('/')}>Go Back</button>
       </div>
     );
