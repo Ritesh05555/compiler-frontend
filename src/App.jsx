@@ -78,17 +78,13 @@ const SplashScreen = () => {
   return (
     <div className="splash-screen">
       <div className="splash-content">
-        <img src="/logo2.png" alt="Logo" className="splash-logo" />
+        <img src="/logo3.png" alt="Logo" className="splash-logo" />
         <h1 className="fade-text">KODE SMITH</h1>
       </div>
     </div>
   );
 };
 
-
-
-
-// Main Screen component
 const MainScreen = ({ mode }) => {
   console.log('MainScreen: Rendering');
   const navigate = useNavigate();
@@ -126,7 +122,6 @@ const MainScreen = ({ mode }) => {
   );
 };
 
-// Editor Screen component
 const EditorScreen = ({ mode, setMode, isShared }) => {
   console.log('EditorScreen: Rendering, isShared=', isShared);
   const navigate = useNavigate();
@@ -142,7 +137,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
   const [fetchError, setFetchError] = useState(null);
 
   const templates = {
-  python: `# Welcome to Kode Smith! 🎉
+    python: `# Welcome to Kode Smith! 🎉
 #
 # Python: The language of simplicity and power, perfect for AI, data science, and automation.
 #
@@ -152,7 +147,7 @@ const EditorScreen = ({ mode, setMode, isShared }) => {
 
 print("Hello Duniya")`,
 
-  javascript: `// Welcome to Kode Smith! 🎉
+    javascript: `// Welcome to Kode Smith! 🎉
 // 
 // JavaScript: Bring the web to life with dynamic, interactive experiences.
 // 
@@ -161,7 +156,7 @@ print("Hello Duniya")`,
 // Happy Coding! 🚀
 console.log("Hello, World!");`,
 
-  cpp: `/*
+    cpp: `/*
  * Welcome to Kode Smith! 🎉
  *
  * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.
@@ -176,7 +171,7 @@ int main() {
     return 0;
 }`,
 
-  c: `/*
+    c: `/*
  * Welcome to Kode Smith! 🎉
  *
  * C: The foundation of modern programming, built for speed and low-level control.
@@ -191,22 +186,13 @@ int main() {
     return 0;
 }`,
 
-  java: `/*
- * Welcome to Kode Smith! 🎉
- *
- * Java: The language of reliability, powering enterprises, Android apps, and more.
- *
- * Build once, run anywhere—Java is your key to scalable innovation.
- *
- * Happy Coding! 🚀
- */
+    java: `
 public class KodeSmith {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }
 }`
-};
-
+  };
 
   const languageKeywords = {
     python: [
@@ -265,19 +251,19 @@ public class KodeSmith {
     { name: 'Custom Neon Mode', value: 'custom-neon' },
   ];
 
-  // Load shared code if accessing via /code/:language/:codeId
   useEffect(() => {
     if (isShared && codeId) {
       console.log('EditorScreen: Fetching shared code for codeId=', codeId);
       setIsLoading(true);
       axios
-        .get(`https://compiler-backend-e3eg.onrender.com/api/code/${codeId}`)
+        .get(`https://compiler-backend-gxeb.onrender.com/api/code/${codeId}`) // Update to deployed backend URL
         .then((response) => {
           console.log('EditorScreen: Shared code fetched', response.data);
           const { code: sharedCode, language: sharedLanguage } = response.data;
           if (sharedLanguage === language) {
             setCode(sharedCode);
             setLinkId(codeId);
+            setShareLink(`https://compiler-frontend-gxeb.onrender.com/${sharedLanguage}/${codeId}`);
           } else {
             setCode(templates[language] || '');
             setFetchError('Language mismatch in shared code.');
@@ -479,103 +465,98 @@ public class KodeSmith {
   };
 
   const handleSave = async () => {
-  setIsSaving(true);
-  setIsSaved(false);
-
-  try {
-    const response = await axios.post(
-      'https://compiler-backend-e3eg.onrender.com/api/code/save',
-      {
-        code,
-        language,
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-      }
-    );
-
-    const { linkId, shareUrl } = response.data;
-
-    setLinkId(linkId);
-    setShareLink(shareUrl); // store the shareable URL from backend
-    setIsSaving(false);
-    setIsSaved(true);
-
-    setTimeout(() => setIsSaved(false), 2000);
-  } catch (error) {
-    alert('Failed to save code. Please try again.');
-    setIsSaving(false);
+    setIsSaving(true);
     setIsSaved(false);
-  }
-};
+
+    try {
+      const response = await axios.post(
+        'https://compiler-backend-e3eg.onrender.com/api/code/save',
+        {
+          code,
+          language,
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+        }
+      );
+
+      const { linkId } = response.data;
+      setLinkId(linkId);
+      setShareLink(response.data.link); // Use the link directly from backend response
+      setIsSaved(true);
+      console.log('Save successful, linkId:', linkId, 'shareLink:', response.data.link);
+
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (error) {
+      alert('Failed to save code. Please try again.');
+      setIsSaving(false);
+      setIsSaved(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDownloadCode = () => {
-  const fileExtension = {
-    python: 'py',
-    javascript: 'js',
-    cpp: 'cpp',
-    c: 'c',
-    java: 'java',
-  }[language];
+    const fileExtension = {
+      python: 'py',
+      javascript: 'js',
+      cpp: 'cpp',
+      c: 'c',
+      java: 'java',
+    }[language];
 
-  const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
-  saveAs(blob, `code.${fileExtension}`);
-};
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    saveAs(blob, `code.${fileExtension}`);
+  };
 
-const handleDownloadImage = () => {
-  if (imageUrl) {
-    saveAs(imageUrl, imageUrl.split('/').pop());
-  }
-};
+  const handleDownloadImage = () => {
+    if (imageUrl) {
+      saveAs(imageUrl, imageUrl.split('/').pop());
+    }
+  };
 
-const handleShare = () => {
-  if (!shareLink) {
-    alert('Please save your code before sharing!');
-    return;
-  }
-
-  setIsGeneratingLink(true);
-
-  setTimeout(() => {
-    setIsGeneratingLink(false);
+  const handleShare = () => {
+    console.log('handleShare called, isSaved:', isSaved, 'linkId:', linkId, 'shareLink:', shareLink);
+    if (!shareLink) {
+      alert('Please save your code before sharing!');
+      return;
+    }
     setShowShareLink(true);
-  }, 500); // shorter delay just for animation
-};
+  };
 
+  const handleCopyToClipboard = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      alert('Link copied to clipboard!');
+      setTimeout(() => setShowShareLink(false), 500);
+    }
+  };
 
-const handleCopyToClipboard = () => {
-  if (!shareLink) return;
-  navigator.clipboard.writeText(shareLink);
-  alert('Link copied to clipboard!');
-  setTimeout(() => setShowShareLink(false), 500);
-};
+  const hideOutput = () => {
+    setShowOutput(false);
+    setIsLoading(false);
+    setImageUrl('');
+  };
 
-const hideOutput = () => {
-  setShowOutput(false);
-  setIsLoading(false);
-  setImageUrl('');
-};
+  const openImageModal = () => {
+    if (imageUrl) {
+      setShowImageModal(true);
+    }
+  };
 
-const openImageModal = () => {
-  if (imageUrl) {
-    setShowImageModal(true);
-  }
-};
+  const toggleOutput = () => {
+    setShowOutput(!showOutput);
+  };
 
-const toggleOutput = () => {
-  setShowOutput(!showOutput);
-};
+  const toggleModeDropdown = () => {
+    setShowModeDropdown(!showModeDropdown);
+  };
 
-const toggleModeDropdown = () => {
-  setShowModeDropdown(!showModeDropdown);
-};
-
-const handleModeSelect = (modeValue) => {
-  setMode(modeValue);
-  setShowModeDropdown(false);
-};
-
+  const handleModeSelect = (modeValue) => {
+    setMode(modeValue);
+    setShowModeDropdown(false);
+  };
 
   if (!language || !templates[language]) {
     return (

@@ -75,7 +75,7 @@ html, body {
 .splash-content {
   text-align: center;
   z-index: 1;
-  animation: fadeInOut 5s ease-in-out forwards;
+  animation: fadeInOut 6s ease-in-out forwards;
 }
 
 /* Logo styling */
