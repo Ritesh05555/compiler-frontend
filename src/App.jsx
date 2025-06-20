@@ -1492,7 +1492,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, usePa
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
-import './App.css'; // Ensure you have this CSS file
+import './App.css';
 
 // Move templates outside the component to avoid initialization issues
 const templates = {
@@ -1501,7 +1501,7 @@ const templates = {
   cpp: `/*\n * Welcome to Kode Smith! 🎉\n *\n * C++: The language of speed and control, ideal for games, systems, and performance-driven apps.\n *\n * Harness the power of C++—where precision meets performance.\n *\n * Happy Coding! 🚀\n */\n#include <iostream>\nint main() {\n    std::cout << "Hello, World!\\n";\n    return 0;\n}`,
   c: `/*\n * Welcome to Kode Smith! 🎉\n *\n * C: The foundation of modern programming, built for speed and low-level control.\n *\n * Code close to the metal—unleash the raw power of C.\n *\n * Happy Coding! 🚀\n */\n#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");
     return 0;\n}`,
-  java: `/*\n * Welcome to Kode Smith! 🎉\n *\n * Java: The language of reliability, powering enterprises, Android apps, and more.\n *\n * Build once, run anywhere—Java is your key to scalable innovation.\n *\n * Happy Coding! 🚀\n */\npublic class KodeSmith {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`
+  java: `\npublic class KodeSmith {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`
 };
 
 // Error Boundary to catch rendering errors in EditorScreen
@@ -1519,10 +1519,9 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        // Reverted to minimal inline styles here, assuming App.css will handle general styling
-        <div style={{ padding: '20px', color: 'white', backgroundColor: '#282c34', height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="error-boundary">
           <h2>Something went wrong in EditorScreen:</h2>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: 'red' }}>{this.state.error?.toString()}</pre>
+          <pre>{this.state.error?.toString()}</pre>
           <button onClick={() => window.location.href = '/'}>Go Back to Home</button>
         </div>
       );
@@ -1530,6 +1529,17 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
+
+// Loading Screen Component for shared links
+const LoadingScreen = () => {
+  return (
+    <div className="loading-screen">
+      <div className="loading-content">
+        <h1>Loading Code</h1>
+      </div>
+    </div>
+  );
+};
 
 // SplashScreen Component
 const SplashScreen = () => {
@@ -1584,7 +1594,7 @@ const MainScreen = ({ mode }) => {
 const EditorScreen = ({ mode, setMode }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language: paramLanguage } = useParams(); // language from URL path /editor/:language
+  const { language: paramLanguage } = useParams();
   const textareaRef = useRef(null);
   const suggestionRef = useRef(null);
   const editorWrapperRef = useRef(null);
@@ -1593,10 +1603,10 @@ const EditorScreen = ({ mode, setMode }) => {
   const modalRef = useRef(null);
   
   const searchParams = new URLSearchParams(location.search);
-  const token = searchParams.get('token'); // token from URL query /code?token=...
+  const token = searchParams.get('token');
 
   const [code, setCode] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState(paramLanguage); // Actual language being used
+  const [currentLanguage, setCurrentLanguage] = useState(paramLanguage);
   const [output, setOutput] = useState('');
   const [isError, setIsError] = useState(false);
   const [shareLink, setShareLink] = useState('');
@@ -1604,8 +1614,8 @@ const EditorScreen = ({ mode, setMode }) => {
   const [showOutput, setShowOutput] = useState(false);
   const [hasOutput, setHasOutput] = useState(false);
   const [showShareLink, setShowShareLink] = useState(false);
-  const [isLoadingInitialCode, setIsLoadingInitialCode] = useState(true); // For initial fetch
-  const [isExecutingCode, setIsExecutingCode] = useState(false); // For run button
+  const [isLoadingInitialCode, setIsLoadingInitialCode] = useState(true);
+  const [isExecutingCode, setIsExecutingCode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
@@ -1617,11 +1627,22 @@ const EditorScreen = ({ mode, setMode }) => {
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [fetchError, setFetchError] = useState(null);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(!!token);
+
+  // Effect to handle loading screen for shared links
+  useEffect(() => {
+    if (token) {
+      const timer = setTimeout(() => {
+        setShowLoadingScreen(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [token]);
 
   // Effect to load code based on token or paramLanguage
   useEffect(() => {
     const loadCode = async () => {
-      setIsLoadingInitialCode(true); // Indicate that we are loading initial code
+      setIsLoadingInitialCode(true);
       setFetchError(null);
 
       if (token) {
@@ -1646,16 +1667,16 @@ const EditorScreen = ({ mode, setMode }) => {
           setCode(templates[paramLanguage] || '');
           setCurrentLanguage(paramLanguage);
         } finally {
-          setIsLoadingInitialCode(false); // Done loading initial code
+          setIsLoadingInitialCode(false);
         }
       } else {
         if (paramLanguage && templates[paramLanguage]) {
           setCode(templates[paramLanguage]);
           setCurrentLanguage(paramLanguage);
-          setIsLoadingInitialCode(false); // Done loading initial code
+          setIsLoadingInitialCode(false);
         } else {
           setFetchError('No language specified or invalid language.');
-          setIsLoadingInitialCode(false); // Done loading initial code
+          setIsLoadingInitialCode(false);
         }
       }
     };
@@ -1710,8 +1731,8 @@ const EditorScreen = ({ mode, setMode }) => {
     const handleScroll = () => {
       if (textarea && lineNumbersElem && highlight) {
         lineNumbersElem.scrollTop = textarea.scrollTop;
-        const lineHeight = 24; // Assuming a fixed line height for simplicity
-        const paddingTop = 20; // Matches CSS padding-top for textarea
+        const lineHeight = 24;
+        const paddingTop = 20;
         highlight.style.top = `${(currentLine - 1) * lineHeight + paddingTop - textarea.scrollTop}px`;
       }
     };
@@ -1755,7 +1776,7 @@ const EditorScreen = ({ mode, setMode }) => {
 
     const fontSize = parseInt(getComputedStyle(element).fontSize) || 14;
     const lineHeight = parseInt(getComputedStyle(element).lineHeight) || 24;
-    const charWidth = fontSize * 0.6; // Approximation
+    const charWidth = fontSize * 0.6;
 
     const top = (lineNumber - 1) * lineHeight - element.scrollTop + 20;
     const left = currentLineText.length * charWidth - element.scrollLeft + 40;
@@ -1849,7 +1870,7 @@ const EditorScreen = ({ mode, setMode }) => {
   const handleRun = async () => {
     setShowOutput(true);
     setShowShareLink(false);
-    setIsExecutingCode(true); // Set loading for execution
+    setIsExecutingCode(true);
     setOutput('');
     setImageUrl('');
     setHasOutput(true);
@@ -1873,19 +1894,20 @@ const EditorScreen = ({ mode, setMode }) => {
         setOutput(response.data || 'No output');
         setIsError(false);
       }
-      setIsExecutingCode(false); // Unset loading after execution
+      setIsExecutingCode(false);
     } catch (error) {
       console.error('Run error:', error.message, error.response?.data);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to execute code. Please check the backend server.';
       setOutput(errorMessage);
       setIsError(true);
-      setIsExecutingCode(false); // Unset loading on error
+      setIsExecutingCode(false);
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     setIsSaved(false);
+    setIsGeneratingLink(true);
 
     try {
       const response = await axios.post('https://compiler-backend-e3eg.onrender.com/api/code/save', { code, language: currentLanguage }, {
@@ -1897,13 +1919,14 @@ const EditorScreen = ({ mode, setMode }) => {
       const frontendBaseUrl = window.location.origin;
       setShareLink(`${frontendBaseUrl}/code?token=${token}`);
       setIsSaved(true);
-      console.log('Save successful, token:', token, 'shareLink:', `${frontendBaseUrl}/code?token=${token}`);
+      setIsGeneratingLink(false);
       setTimeout(() => setIsSaved(false), 2000);
     } catch (error) {
       console.error('Save error:', error.message, error.response?.data);
       alert('Failed to save code. Please try again. Error: ' + (error.response?.data?.error || error.message));
       setIsSaving(false);
       setIsSaved(false);
+      setIsGeneratingLink(false);
     } finally {
       setIsSaving(false);
     }
@@ -1929,7 +1952,6 @@ const EditorScreen = ({ mode, setMode }) => {
   };
 
   const handleShare = () => {
-    console.log('handleShare called, isSaved:', isSaved, 'linkId:', linkId, 'shareLink:', shareLink);
     if (!shareLink) {
       alert('Please save your code before sharing!');
       return;
@@ -1947,7 +1969,6 @@ const EditorScreen = ({ mode, setMode }) => {
 
   const hideOutput = () => {
     setShowOutput(false);
-    // Do not touch execution loading state here
     setImageUrl('');
   };
 
@@ -1970,25 +1991,27 @@ const EditorScreen = ({ mode, setMode }) => {
     setShowModeDropdown(false);
   };
 
+  if (showLoadingScreen) {
+    return <LoadingScreen />;
+  }
+
   if (isLoadingInitialCode) {
     return (
-      <div className="full-screen-message"> {/* Use a class for styling */}
+      <div className="full-screen-message">
         <h2>Loading code...</h2>
-        {/* You can add a spinner via CSS for .full-screen-message or a child element */}
       </div>
     );
   }
 
   if (fetchError) {
     return (
-      <div className="full-screen-message error-message"> {/* Use classes for styling */}
+      <div className="full-screen-message error-message">
         <h2>Error: {fetchError}</h2>
         <button onClick={() => navigate('/')}>Go Back</button>
       </div>
     );
   }
 
-  // Fallback for invalid language, though ideally fetchError handles this
   if (!currentLanguage || !templates[currentLanguage]) {
     return (
       <div className="full-screen-message error-message">
@@ -2000,15 +2023,15 @@ const EditorScreen = ({ mode, setMode }) => {
 
   return (
     <motion.div className="editor-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-      <nav className="navbar">
+      <nav className={`navbar ${mode}`}>
         <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>KODE SMITH</h1>
       </nav>
       <div className={`action-bar ${mode}`}>
-        <button onClick={handleRun} className="action-btn">
+        <button onClick={handleRun} className={`action-btn ${mode}`}>
           <i className="fa-solid fa-play"></i> Run (Ctrl+Enter)
         </button>
         <div className="mode-toggle-container">
-          <button onClick={toggleModeDropdown} className="mode-toggle">
+          <button onClick={toggleModeDropdown} className={`mode-toggle ${mode}`}>
             <i className="fa-solid fa-palette"></i> Theme
           </button>
           {showModeDropdown && (
@@ -2017,32 +2040,33 @@ const EditorScreen = ({ mode, setMode }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.3 }}
             >
               {themes.map((theme) => (
-                <div key={theme.value} className="mode-dropdown-item" onClick={() => handleModeSelect(theme.value)}>
+                <div key={theme.value} className={`mode-dropdown-item ${mode}`} onClick={() => handleModeSelect(theme.value)}>
                   {theme.name}
                 </div>
               ))}
             </motion.div>
           )}
         </div>
-        <button onClick={handleSave} className="action-btn">
+        <button onClick={handleSave} className={`action-btn ${mode}`}>
           <i className="fa-solid fa-save"></i> Save
         </button>
-        <button onClick={handleDownloadCode} className="action-btn">
+        <button onClick={handleDownloadCode} className={`action-btn ${mode}`}>
           <i className="fa-solid fa-download"></i> Download
         </button>
         <div className="share-container">
-          <button onClick={handleShare} className="action-btn">
+          <button onClick={handleShare} className={`action-btn ${mode}`}>
             <i className="fa-solid fa-share-alt"></i> Share
           </button>
           {showShareLink && (
             <motion.div
               className={`share-link ${mode}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: showShareLink ? 1 : 0 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
             >
               <p>
                 <span>{shareLink}</span>
@@ -2063,7 +2087,7 @@ const EditorScreen = ({ mode, setMode }) => {
               ))}
             </div>
             <div className="code-editor-wrapper">
-              <div className="current-line-highlight" ref={highlightRef} style={{ top: `${(currentLine - 1) * 24 + 20}px`, height: '24px' }} />
+              <div className={`current-line-highlight ${mode}`} ref={highlightRef} style={{ top: `${(currentLine - 1) * 24 + 20}px`, height: '24px' }} />
               <textarea
                 id="code-editor"
                 className={`code-editor ${mode}`}
@@ -2085,11 +2109,11 @@ const EditorScreen = ({ mode, setMode }) => {
               {suggestions.map((suggestion, index) => (
                 <div
                   key={index}
-                  className={`recommendation-item ${index === selectedSuggestionIndex ? 'selected' : ''}`}
+                  className={`recommendation-item ${index === selectedSuggestionIndex ? 'selected' : ''} ${mode}`}
                   onClick={() => insertSuggestion(suggestion)}
                 >
-                  <span className="recommendation-value">{suggestion.value}</span>
-                  <span className="recommendation-meta">{suggestion.meta}</span>
+                  <span className={`recommendation-value ${mode}`}>{suggestion.value}</span>
+                  <span className={`recommendation-meta ${mode}`}>{suggestion.meta}</span>
                 </div>
               ))}
             </div>
@@ -2097,17 +2121,17 @@ const EditorScreen = ({ mode, setMode }) => {
         </div>
       </div>
       {isSaving && (
-        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           Code is saving...
         </motion.div>
       )}
       {isSaved && (
-        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           Code saved!
         </motion.div>
       )}
       {isGeneratingLink && (
-        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className={`notification ${mode}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           Generating link...
         </motion.div>
       )}
@@ -2119,7 +2143,7 @@ const EditorScreen = ({ mode, setMode }) => {
           transition={{ duration: 0.3 }}
         >
           <h3>Output:</h3>
-          {isExecutingCode ? ( // Use isExecutingCode for run output loading
+          {isExecutingCode ? (
             <div className="loading-spinner">Loading...</div>
           ) : (
             <div className="output-content">
@@ -2155,10 +2179,10 @@ const EditorScreen = ({ mode, setMode }) => {
           <div className={`image-modal-content ${mode}`} ref={modalRef}>
             <img src={imageUrl} alt="Full Screen Output Image" />
             <div className="image-modal-actions">
-              <button onClick={handleDownloadImage} className="action-btn">
+              <button onClick={handleDownloadImage} className={`action-btn ${mode}`}>
                 <i className="fa-solid fa-download"></i> Download Image
               </button>
-              <button onClick={() => setShowImageModal(false)} className="action-btn">
+              <button onClick={() => setShowImageModal(false)} className={`action-btn ${mode}`}>
                 <i className="fa-solid fa-times"></i> Close
               </button>
             </div>
